@@ -2,6 +2,8 @@ import __builtin__
 import random
 from enum import Dir, Terrain, Vegetation
 
+import unicurses
+
 
 class Tile():
     def __init__(self,x,y,terrain=Terrain.WATER,veg=Vegetation.NONE):
@@ -11,12 +13,18 @@ class Tile():
         self.vegetation = veg
         
         self.has_player = False
+        self.has_worker = False
+        
+        self.has_city = False
         
         #used in various pathfinding/gen algorithms
         self.visited = False
-        
+        self.depth = -1
+ 
+
 class Map():
-    def __init__(self, rows, cols):
+    def __init__(self, rows, cols, debug):
+        self.db = debug
         self.width = cols
         self.height = rows
         self.turn = 1
@@ -40,10 +48,21 @@ class Map():
         
         #Player location is flatland
         player_tile.terrain = Terrain.FLAT
-        self.generateSnakyLandmassAround(player_tile.pos[0],player_tile.pos[1])
+        self.generateLandmassAround(player_tile.pos[0],player_tile.pos[1])
         self.resetVisited()
+        
+        #Generate forests
         self.generateForests()
+        
+        #Place City
+        land = __builtin__.filter(self.isClear, self.tiles)
+        idx = random.randint(0,len(land)-1)
+        land[idx].has_city = True
+        land[idx].has_worker = True
     
+        #find path from worker to forest
+        self.findPath(land[idx])
+        
     #returns tile at position on hex map
     def tileAt(self, x,y):
         idx = y*self.width + y/2 + x
@@ -117,11 +136,18 @@ class Map():
             return None
     
     def notVisited(self,tile):
-        return not tile.visited
+        if (not tile.visited) and tile.depth == -1:
+            return True
+        else:
+            return False
         
     def resetVisited(self):
         for tile in self.tiles:
             tile.visited = False
+       
+    def resetDepth(self):
+        for tile in self.tiles:
+            tile.depth = -1
        
     #currently acting as a DFS, resulting in snaky continents
     # try switching to BFS for more bulky continents
@@ -164,23 +190,90 @@ class Map():
             gen_chance -= 7.0
             
     def generateForests(self):
-        gen_chance = 5.0
+        gen_chance = 3.0
         land = __builtin__.filter(self.isFlat, self.tiles)
-        
-        
+              
         for tile in land:
-            if random.uniform(0, 100.0) < gen_chance:
+            if (random.uniform(0, 100.0) < gen_chance) and (tile.vegetation == Vegetation.NONE):
                 tile.vegetation = Vegetation.FOREST
+                self.spreadForest(tile)
+                self.resetVisited()
+    
+    def spreadForest(self, tile, gen_chance=90.0):
+        tile.visited = True
+        
+        if (random.uniform(0,100.0) < gen_chance):
+            tile.vegetation = Vegetation.FOREST
+        
+            neighbors = self.neighborsOf(tile.pos[0],tile.pos[1])
+            neighbors = __builtin__.filter(self.isFlat, neighbors)
+            neighbors = __builtin__.filter(self.notVisited, neighbors)
             
-            
+            for tile in neighbors:
+                self.spreadForest(tile, gen_chance-20.0)
+        
     def isWater(self,tile):
         return tile.terrain == Terrain.WATER
     
     def isFlat(self,tile):
         return tile.terrain == Terrain.FLAT
             
+    def isClear(self,tile):
+        if tile.terrain == Terrain.FLAT:
+            if tile.vegetation == Vegetation.NONE:
+                if not tile.has_player:
+                    return True
+        return False
+        
+    #returns a tile that fits property,
+    #modifies depth properties of tiles
+    #part 1 of shortest path algo
+    def findTile(self, src):
+        depth = 0
+        src.depth = depth
+        found = False
+        ls = [src]
+        
+        while not found:
+            depth += 1
+            _ls = []
+            
+            for tile in ls: 
+                children = self.neighborsOf(tile.pos[0],tile.pos[1])
+                children = __builtin__.filter(self.isFlat, children)
+                children = __builtin__.filter(self.notVisited, children)
+                for child in children:
+                    child.depth = depth
+                    if child.vegetation == Vegetation.FOREST:
+                        found = True
+                        unicurses.waddstr(self.db, "Dist to Forest: " + str(depth)+'\n')
+                        return child
+                        
+                _ls += children
+        
+            ls += _ls
     
     
-                    
+    def findPath(self, src):
+        curr = self.findTile(src)
+        path = [curr]
+        
+        f = lambda t:  t.depth == (curr.depth-1)
+        
+        #find neighbor of dst with appropriate depth
+        while True:
+            neighbors = self.neighborsOf(curr.pos[0],curr.pos[1])
+            neighbors = __builtin__.filter(f, neighbors)
+            unicurses.waddstr(self.db, "|depth/neighbors: " +str(curr.depth) +'/')
+            unicurses.waddstr(self.db, str(len(neighbors))+'\n')
+            
+            i = random.randint(0,len(neighbors)-1)
+            curr = neighbors[i]
+            path.append(curr)
+            
+            if curr.depth == 0:
+                for tile in path:
+                    tile.has_worker = True
+                return path
         
         

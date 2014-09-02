@@ -16,3 +16,8 @@ class Dir:
     DL = 4
     DR = 5
     LAST = 6
+    
+class Behavior:
+    IDLE = 0
+    WANDER = 1
+    TRAVEL = 2

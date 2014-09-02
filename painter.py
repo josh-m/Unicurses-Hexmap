@@ -1,75 +1,114 @@
+# coding=UTF-8
+
 import __builtin__
 from unicurses import *
-from enum import Terrain
+from enum import Terrain, Vegetation
 
-class ColorPair:
-    WATER = 5
-    GRASS = 6
-    WATER_BORDER = 1
-    GRASS_BORDER = 2
-    GRASS_PLAYER = 3
-    GRASS_FOREST = 4
+class Colors:
+    I_WATER_BORDER = 1
+    I_WATER_PLAYER = 2
+    I_GRASS_BORDER = 3
+    I_GRASS_PLAYER = 4
+    I_GRASS_FOREST = 5
+    I_GRASS_CITY = 6
     
+    def __init__(self):
+        start_color()
+        init_pair(Colors.I_WATER_BORDER, COLOR_WHITE,COLOR_BLUE)
+        init_pair(Colors.I_WATER_PLAYER, COLOR_RED, COLOR_BLUE)
+        init_pair(Colors.I_GRASS_BORDER, COLOR_WHITE,COLOR_GREEN)
+        init_pair(Colors.I_GRASS_PLAYER, COLOR_RED, COLOR_GREEN)
+        init_pair(Colors.I_GRASS_FOREST, COLOR_GREEN, COLOR_GREEN)
+        init_pair(Colors.I_GRASS_CITY, COLOR_CYAN, COLOR_GREEN)
+
+        self.WATER_BORDER = color_pair(Colors.I_WATER_BORDER)
+        self.WATER_PLAYER = color_pair(Colors.I_WATER_PLAYER) + A_BOLD
+        self.GRASS_BORDER = color_pair(Colors.I_GRASS_BORDER)
+        self.GRASS_PLAYER = color_pair(Colors.I_GRASS_PLAYER) + A_BOLD
+        self.GRASS_FOREST = color_pair(Colors.I_GRASS_FOREST) + A_BOLD
+        self.GRASS_CITY = color_pair(Colors.I_GRASS_CITY) + A_BOLD
+      
 class Painter():
     def __init__(self):
         start_color()
-        init_pair(ColorPair.WATER, COLOR_WHITE,COLOR_BLUE)
-        init_pair(ColorPair.GRASS, COLOR_WHITE,COLOR_GREEN)
+        self.colors = Colors()
         
-    def firstDrawCharOnTile(self,tile,char,window, attr=A_NORMAL):
+    def drawTile(self,tile,window):
         x,y = tile.pos
-        pos_x, pos_y = self.findCenter(x,y)
-     
-        if tile.terrain == Terrain.WATER:
-            this_color = ColorPair.WATER
-        elif tile.terrain == Terrain.FLAT:
-            this_color = ColorPair.GRASS
-            
+        pos_x, pos_y = self.findCenterCoords(x,y)
+
+        self.drawTileCenter(tile,window)
+        self.drawTileEdges(tile,window)
+        self.drawTileBorders(tile,window)
+
+    def drawTileCenter(self,tile,window):
+        x,y = tile.pos
+        pos_x, pos_y = self.findCenterCoords(x,y)
+
+        if tile.has_player:
+            char = "@"
+            color = self.colors.GRASS_PLAYER
+        elif tile.has_worker:
+            char = ";"
+            color = self.colors.GRASS_CITY
+        elif tile.has_city:
+            char = "M"
+            color = self.colors.GRASS_CITY
+        else:
+            if tile.vegetation == Vegetation.FOREST:
+                char = "8"
+                color = self.colors.GRASS_FOREST
+            else:
+                char = " "
+                if tile.terrain == Terrain.WATER:
+                    color = self.colors.WATER_BORDER
+                else:
+                    color = self.colors.GRASS_BORDER
         wmove(window, pos_y, pos_x)
-        waddstr(window, char, color_pair(this_color) + attr)
-        
-        wmove(window,pos_y-1,pos_x)
-        waddstr(window, " ", color_pair(this_color) + attr)
-        wmove(window,pos_y+1,pos_x)
-        waddstr(window, " ", color_pair(this_color) + attr)
-        wmove(window,pos_y,pos_x-1)
-        waddstr(window, " ", color_pair(this_color) + attr)
-        wmove(window,pos_y,pos_x+1)
-        waddstr(window, " ", color_pair(this_color) + attr)
-        
-        wmove(window,pos_y +1,pos_x+1)
-        waddstr(window, "/", color_pair(this_color) + attr)
-        wmove(window,pos_y-1, pos_x+1)
-        waddstr(window, "\\", color_pair(this_color) + attr)
-        wmove(window,pos_y, pos_x+2)
-        waddstr(window, "|", color_pair(this_color) + attr)
-        wmove(window,pos_y, pos_x-2)
-        waddstr(window, "|", color_pair(this_color) + attr)
-        wmove(window,pos_y+1, pos_x-1)
-        waddstr(window, "\\", color_pair(this_color) + attr)
-        wmove(window,pos_y-1, pos_x-1)
-        waddstr(window, "/", color_pair(this_color) + attr)
-        
-    #incomplete
-    def drawTileBorders(self,tile,window,attr=A_NORMAL):
-        pos_x, pos_y = tile.pos
-        
+        waddstr(window, char,color)
     
-    def drawCharOnTile(self,tile,char,window,attr = A_NORMAL):
-        x,y = tile.pos
-        pos_x, pos_y = self.findCenter(x,y)
-     
+    def drawTileEdges(self,tile,window):
+        if tile.vegetation == Vegetation.NONE:
+            char = " "
+        else: #if forest
+            char = "8"
+            
         if tile.terrain == Terrain.WATER:
-            this_color = ColorPair.WATER
-        elif tile.terrain == Terrain.FLAT:
-            this_color = ColorPair.GRASS
-        wmove(window, pos_y, pos_x)
-        waddstr(window, char, color_pair(this_color) + attr)
+            color = self.colors.WATER_BORDER
+        else:
+            color = self.colors.GRASS_FOREST
+            
+        pos_x, pos_y = self.findCenterCoords(tile.pos[0], tile.pos[1])
+        wmove(window,pos_y-1,pos_x)
+        waddstr(window, char,color)
+        wmove(window,pos_y+1,pos_x)
+        waddstr(window, char,color)
+        wmove(window,pos_y,pos_x-1)
+        waddstr(window, char,color)
+        wmove(window,pos_y,pos_x+1)
+        waddstr(window, char,color)        
         
-        update_panels()
-        doupdate()
+    def drawTileBorders(self,tile,window):
+        if tile.terrain == Terrain.WATER:
+            color = self.colors.WATER_BORDER
+        else:
+            color = self.colors.GRASS_BORDER
         
-    def findCenter(self,x,y):
+        pos_x, pos_y = self.findCenterCoords(tile.pos[0], tile.pos[1])
+        wmove(window,pos_y-1, pos_x-1)
+        waddstr(window, "/", color)
+        wmove(window,pos_y-1, pos_x+1)
+        waddstr(window, "\\", color)
+        wmove(window,pos_y, pos_x-2)
+        waddstr(window, "|", color)
+        wmove(window,pos_y, pos_x+2)
+        waddstr(window, "|", color)
+        wmove(window,pos_y+1, pos_x-1)
+        waddstr(window, "\\", color)
+        wmove(window,pos_y+1,pos_x+1)
+        waddstr(window, "/", color)       
+        
+    def findCenterCoords(self,x,y):
         row = 2 + 2*y
         
         if y % 2 == 0:
@@ -81,28 +120,12 @@ class Painter():
 
     
     def drawTiles(self, world, window):
- 
         water = __builtin__.filter(world.isWater, world.tiles)
         grass = __builtin__.filter(world.isFlat, world.tiles)
 
         for tile in grass:
-            #Draw tile contents
-            if tile.has_player:
-                self.firstDrawCharOnTile(tile,"@",window)
-                pos = self.findCenter(tile.pos[0],tile.pos[1])
-                move(pos[1]+1,pos[0]+1)
-            else:
-                self.firstDrawCharOnTile(tile," ",window)
-        
+           self.drawTile(tile,window)
         for tile in water:
-            #Draw tile contents
-            if tile.has_player:
-                self.firstDrawCharOnTile(tile,"@",window)
-                pos = findCenter(tile.pos[0],tile.pos[1])
-                move(pos[1]+1,pos[0]+1)
-            else:
-                self.firstDrawCharOnTile(tile," ",window)
+            self.drawTile(tile,window)
         
         box(window)
-        update_panels()
-        doupdate()

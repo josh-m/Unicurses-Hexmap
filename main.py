@@ -1,7 +1,14 @@
+#coding = UTF-8
+
 from unicurses import *
 from map import Tile, Map
 from enum import *
 from painter import Painter
+
+import os
+from collections import deque
+
+
 
 class Key:
     ESC = 27
@@ -18,7 +25,7 @@ class Key:
     F = 102
     G = 103
 
-def drawChanges():
+def showChanges():
     update_panels()
     doupdate()
     
@@ -27,15 +34,12 @@ def incrementTurn(world,status):
     wmove(status,1,1)
     waddstr(status, "Turn " + str(world.turn))
     
-    drawChanges()
+    showChanges()
     
 def movePlayer(dir, world, window, status, painter):
-    searching = True
     for tile in world.tiles:
         if tile.has_player:
-            pos_x, pos_y = tile.pos 
-            searching = False
-        if not searching:
+            pos_x, pos_y = tile.pos
             break
     
     _pos = world.neighborAt(pos_x, pos_y, dir)
@@ -52,12 +56,16 @@ def movePlayer(dir, world, window, status, painter):
             tile.has_player = False
             _tile.has_player = True
             #draw to window
-            painter.drawCharOnTile(tile, " ", window)
-            painter.drawCharOnTile(_tile, "@", window)
+            painter.drawTileCenter(tile, window)
+            painter.drawTileCenter(_tile, window)
             
-
-                          
+            showChanges()
+            
+             
 def main():
+    #resize terminal (WINDOWS SPECIFIC)
+    os.system("mode con cols=140 lines=80")
+    
     stdscr = initscr()
 
     noecho()
@@ -68,8 +76,17 @@ def main():
     N_ROWS = 25
     N_COLS = 30
     
+    debug_win = newwin(15,30,0,0)
+    box(debug_win)
+    wmove(debug_win, 1,1)
+    waddstr(debug_win, "Debug:")
+    wmove(debug_win, 2,1)
+
+    debug_pnl = new_panel(debug_win)
+    move_panel(debug_pnl, 5+2*(N_ROWS-1) -1, 32)
+
     #Generate the world
-    world_map = Map(N_ROWS,N_COLS)
+    world_map = Map(N_ROWS,N_COLS,debug_win)
 
     #map_height: 3 + 2*(rows-1) + 2 for border
     #map_width: 5 + 4*cols + 2 for border
@@ -83,7 +100,7 @@ def main():
     map_pnl = new_panel(map_win)
     move_panel(map_pnl,1,1)
     
-    top_panel(map_pnl)
+    top_panel(debug_pnl)
     
     status_win = newwin (10,30,0,0)
     box(status_win)
@@ -92,8 +109,10 @@ def main():
     
     status_pnl = new_panel(status_win)
     move_panel(status_pnl, 5+2*(N_ROWS-1) -1 , 2)
+
+
     
-    drawChanges()
+    showChanges()
     
     
     #input loop
@@ -122,5 +141,3 @@ def main():
     
 if __name__ == "__main__":
     main()
-
-    
