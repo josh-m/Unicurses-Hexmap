@@ -6,6 +6,7 @@ from enum import *
 from painter import Painter
 
 import os
+import __builtin__
 from collections import deque
 
 
@@ -29,10 +30,20 @@ def showChanges():
     update_panels()
     doupdate()
     
-def incrementTurn(world,status):
-    world.turn += 1
+
+    
+def incrementTurn(world,status,painter,window):
     wmove(status,1,1)
     waddstr(status, "Turn " + str(world.turn))
+
+    worker_old =world.entities[0].my_tile
+
+    world.doTurn()
+    
+    worker_new = world.entities[0].my_tile
+    painter.drawTileCenter(worker_old, window)
+    painter.drawTileEdges(worker_old, window)
+    painter.drawTileCenter(worker_new, window)
     
     showChanges()
     
@@ -49,8 +60,9 @@ def movePlayer(dir, world, window, status, painter):
     
         if _tile.terrain != Terrain.WATER:
             #increment turn
-            incrementTurn(world,status)
+            incrementTurn(world,status,painter,window)
             
+
             tile = world.tileAt(pos_x, pos_y)
             #update position on tile map
             tile.has_player = False
@@ -116,11 +128,10 @@ def main():
     
     
     #input loop
-    running = True
-    while running:
+    while True:
         ch = getch()
         if ch == Key.ESC:
-            running = False
+            break
         elif ch == Key.E:
             movePlayer(Dir.UL, world_map, map_win, status_win, painter)
         elif ch == Key.R:
@@ -134,7 +145,7 @@ def main():
         elif ch == Key.F:
             movePlayer(Dir.DR, world_map, map_win, status_win, painter)
         elif ch == Key.SPACE:
-            incrementTurn(world_map, status_win)
+            incrementTurn(world_map, status_win, painter, map_win)
         
     
     endwin()

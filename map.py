@@ -1,10 +1,32 @@
 import __builtin__
 import random
-from enum import Dir, Terrain, Vegetation
+from enum import Dir, Terrain, Vegetation, Behavior
 
 import unicurses
 
-
+class Worker():
+    def __init__(self,tile,world):
+        self.world = world
+        self.my_tile = tile
+        self.behavior = Behavior.TRAVEL
+        self.path = self.world.findPath(tile, world.hasForest)
+        
+    def doTurn(self):
+        if self.behavior == Behavior.TRAVEL:
+            if len(self.path) > 0:
+                self.world.tileAt(self.my_tile.pos[0],self.my_tile.pos[1]).has_worker = False
+                new_tile = self.path.pop()
+                self.world.tileAt(new_tile.pos[0],new_tile.pos[1]).has_worker = True
+                self.my_tile = new_tile
+            else:
+                if self.my_tile.has_city:#travel to a forest
+                    self.path = self.world.findPath(self.my_tile, self.world.hasForest)
+                else:#cut forest, travel to the city
+                    self.my_tile.vegetation = Vegetation.NONE
+                    self.path = self.world.findPath(self.my_tile, self.world.hasCity)
+                
+                
+        
 class Tile():
     def __init__(self,x,y,terrain=Terrain.WATER,veg=Vegetation.NONE):
         self.pos = (x,y)
@@ -29,6 +51,7 @@ class Map():
         self.height = rows
         self.turn = 1
         
+        
         self.tiles = list()
         num_tiles = rows*cols + rows/2
         
@@ -38,7 +61,8 @@ class Map():
             #odd rows have an extra column
             if row % 2 != 0:
                 self.tiles.append(Tile(cols, row))
-                
+        
+            
         #choose a random tile to place player
         #more likely to be towards center
         player_x = int( random.triangular(0,cols))
@@ -48,20 +72,27 @@ class Map():
         
         #Player location is flatland
         player_tile.terrain = Terrain.FLAT
-        self.generateLandmassAround(player_tile.pos[0],player_tile.pos[1])
+        self.generateSnakyLandmassAround(player_tile.pos[0],player_tile.pos[1])
         self.resetVisited()
         
-        #Generate forests
         self.generateForests()
         
         #Place City
         land = __builtin__.filter(self.isClear, self.tiles)
         idx = random.randint(0,len(land)-1)
-        land[idx].has_city = True
-        land[idx].has_worker = True
+        city_tile = land[idx]
+        city_tile.has_city = True
+        worker = Worker(city_tile,self)
+        city_tile.has_worker=True
+
+        self.entities = [worker] 
     
-        #find path from worker to forest
-        self.findPath(land[idx])
+    def doTurn(self):
+        self.turn += 1
+        for entity in self.entities:
+            entity.doTurn()
+        
+        unicurses.waddstr(self.db, str(entity.my_tile.pos[0]) +',' +str(entity.my_tile.pos[1])+'\n')
         
     #returns tile at position on hex map
     def tileAt(self, x,y):
@@ -69,7 +100,7 @@ class Map():
         return self.tiles[idx]
     
     #returns a list of all neighboring tiles
-    def neighborsOf(self, x,y):
+    def neighborsOfPos(self, x,y):
         ls = list()
         for dir in range(Dir.FIRST, Dir.LAST):
             pos = self.neighborAt(x,y, dir)
@@ -77,6 +108,9 @@ class Map():
                 ls.append(self.tileAt(pos[0],pos[1]))
             
         return ls
+    
+    def neighborsOf(self, tile):        
+        return self.neighborsOfPos(tile.pos[0], tile.pos[1])
     
     #returns tile coordinates if neighbor exists, else None
     def neighborAt(self, x,y, dir):
@@ -158,11 +192,11 @@ class Map():
         if random.uniform(0,99.9) < gen_chance:
             this_tile.terrain = Terrain.FLAT
             gen_chance -= 0.5
-            neighbors = self.neighborsOf(x,y)
+            neighbors = self.neighborsOf(this_tile)
                             
             for tile in neighbors:
                 if not tile.visited:
-                    self.generateLandmassAround(tile.pos[0],tile.pos[1],gen_chance)
+                    self.generateSnakyLandmassAround(tile.pos[0],tile.pos[1],gen_chance)
     
     
     #iterative iteration that produces more bulky landmasses
@@ -170,7 +204,7 @@ class Map():
         this_tile = self.tileAt(x,y)
         this_tile.visited = True
         
-        gen_list = self.neighborsOf(x,y)
+        gen_list = self.neighborsOf(this_tile)
         temp_list = list()
         
         while gen_list:
@@ -181,7 +215,7 @@ class Map():
                 
                 if random.uniform(0, 99.9) < gen_chance:
                     tile.terrain = Terrain.FLAT
-                    temp_list += self.neighborsOf(tile.pos[0], tile.pos[1])
+                    temp_list += self.neighborsOf(tile)
             
             gen_list += temp_list
             #prune visited from list
@@ -205,7 +239,7 @@ class Map():
         if (random.uniform(0,100.0) < gen_chance):
             tile.vegetation = Vegetation.FOREST
         
-            neighbors = self.neighborsOf(tile.pos[0],tile.pos[1])
+            neighbors = self.neighborsOf(tile)
             neighbors = __builtin__.filter(self.isFlat, neighbors)
             neighbors = __builtin__.filter(self.notVisited, neighbors)
             
@@ -225,10 +259,19 @@ class Map():
                     return True
         return False
         
+    def hasWorker(self,tile):
+        return tile.has_worker
+        
+    def hasForest(self,tile):
+        return tile.vegetation == Vegetation.FOREST
+        
+    def hasCity(self,tile):
+        return tile.has_city
+        
     #returns a tile that fits property,
     #modifies depth properties of tiles
     #part 1 of shortest path algo
-    def findTile(self, src):
+    def findTile(self, src, has_property):
         depth = 0
         src.depth = depth
         found = False
@@ -239,14 +282,13 @@ class Map():
             _ls = []
             
             for tile in ls: 
-                children = self.neighborsOf(tile.pos[0],tile.pos[1])
+                children = self.neighborsOf(tile)
                 children = __builtin__.filter(self.isFlat, children)
                 children = __builtin__.filter(self.notVisited, children)
                 for child in children:
                     child.depth = depth
-                    if child.vegetation == Vegetation.FOREST:
+                    if has_property(child):
                         found = True
-                        unicurses.waddstr(self.db, "Dist to Forest: " + str(depth)+'\n')
                         return child
                         
                 _ls += children
@@ -254,26 +296,26 @@ class Map():
             ls += _ls
     
     
-    def findPath(self, src):
-        curr = self.findTile(src)
+    def findPath(self, src, has_property):
+        curr = self.findTile(src, has_property)
         path = [curr]
         
         f = lambda t:  t.depth == (curr.depth-1)
         
         #find neighbor of dst with appropriate depth
         while True:
-            neighbors = self.neighborsOf(curr.pos[0],curr.pos[1])
+            neighbors = self.neighborsOf(curr)
             neighbors = __builtin__.filter(f, neighbors)
-            unicurses.waddstr(self.db, "|depth/neighbors: " +str(curr.depth) +'/')
-            unicurses.waddstr(self.db, str(len(neighbors))+'\n')
+            #unicurses.waddstr(self.db, "|depth/neighbors: " +str(curr.depth) +'/')
+            #unicurses.waddstr(self.db, str(len(neighbors))+'\n')
             
             i = random.randint(0,len(neighbors)-1)
             curr = neighbors[i]
             path.append(curr)
             
             if curr.depth == 0:
-                for tile in path:
-                    tile.has_worker = True
+                path.pop()
+                self.resetDepth()
                 return path
         
         
