@@ -1,14 +1,11 @@
-#coding = UTF-8
-
 from unicurses import *
-from map import Tile, Map
-from enum import *
-from painter import Painter
-
 import os
 import __builtin__
 from collections import deque
 
+from map import Tile, Map
+from enum import *
+from painter import Painter
 
 
 class Key:
@@ -26,11 +23,10 @@ class Key:
     F = 102
     G = 103
 
+    
 def showChanges():
     update_panels()
     doupdate()
-    
-
     
 def incrementTurn(world,status,painter,window):
     wmove(status,1,1)
@@ -78,8 +74,8 @@ def main():
     #resize terminal (WINDOWS SPECIFIC)
     os.system("mode con cols=140 lines=80")
     
+    #init curses
     stdscr = initscr()
-
     noecho()
     curs_set(False)
     keypad(stdscr, True)
@@ -88,6 +84,7 @@ def main():
     N_ROWS = 25
     N_COLS = 30
     
+    #Create debugging display
     debug_win = newwin(15,30,0,0)
     box(debug_win)
     wmove(debug_win, 1,1)
@@ -105,8 +102,7 @@ def main():
     map_win = newwin(5+2*(N_ROWS-1), 7+4*N_COLS, 0,0)
     
     painter = Painter()
-
-    painter.drawTiles(world_map, map_win) 
+    painter.drawAllTiles(world_map, map_win) 
     
     #Put world window into a panel
     map_pnl = new_panel(map_win)
@@ -121,7 +117,14 @@ def main():
     
     status_pnl = new_panel(status_win)
     move_panel(status_pnl, 5+2*(N_ROWS-1) -1 , 2)
-
+    
+    info_win = newwin(10,30,0,0)
+    box(info_win)
+    wmove(info_win, 1,1)
+    waddstr(info_win, "Tile Info")
+    
+    info_pnl = new_panel(info_win)
+    move_panel(info_pnl, 5+2*(N_ROWS-1)-1, 62)
 
     
     showChanges()

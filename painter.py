@@ -108,6 +108,17 @@ class Painter():
         wmove(window,pos_y+1,pos_x+1)
         waddstr(window, "/", color)       
         
+    def drawAllTiles(self, world, window):
+        water = __builtin__.filter(world.isWater, world.tiles)
+        grass = __builtin__.filter(world.isFlat, world.tiles)
+
+        for tile in grass:
+           self.drawTile(tile,window)
+        for tile in water:
+            self.drawTile(tile,window)
+        
+        box(window)
+        
     def findCenterCoords(self,x,y):
         row = 2 + 2*y
         
@@ -119,13 +130,3 @@ class Painter():
         return [column, row]
 
     
-    def drawTiles(self, world, window):
-        water = __builtin__.filter(world.isWater, world.tiles)
-        grass = __builtin__.filter(world.isFlat, world.tiles)
-
-        for tile in grass:
-           self.drawTile(tile,window)
-        for tile in water:
-            self.drawTile(tile,window)
-        
-        box(window)

@@ -25,6 +25,9 @@ class Worker():
                     self.my_tile.vegetation = Vegetation.NONE
                     self.path = self.world.findPath(self.my_tile, self.world.hasCity)
                 
+                #idle if no path was found
+                if len(self.path) == 0:
+                    self.behavior = Behavior.IDLE
                 
         
 class Tile():
@@ -72,7 +75,7 @@ class Map():
         
         #Player location is flatland
         player_tile.terrain = Terrain.FLAT
-        self.generateSnakyLandmassAround(player_tile.pos[0],player_tile.pos[1])
+        self.generateLandmassAround(player_tile.pos[0],player_tile.pos[1])
         self.resetVisited()
         
         self.generateForests()
@@ -293,11 +296,18 @@ class Map():
                         
                 _ls += children
         
-            ls += _ls
+            ls = _ls
+            
+            if len(ls) == 0:
+                unicurses.waddstr(self.db, "HHEEEEEEEEYYYYYYEYEYYY CAN'T FIND")
+                return None
     
     
     def findPath(self, src, has_property):
         curr = self.findTile(src, has_property)
+        if curr == None:
+            return list()
+            
         path = [curr]
         
         f = lambda t:  t.depth == (curr.depth-1)
@@ -306,8 +316,6 @@ class Map():
         while True:
             neighbors = self.neighborsOf(curr)
             neighbors = __builtin__.filter(f, neighbors)
-            #unicurses.waddstr(self.db, "|depth/neighbors: " +str(curr.depth) +'/')
-            #unicurses.waddstr(self.db, str(len(neighbors))+'\n')
             
             i = random.randint(0,len(neighbors)-1)
             curr = neighbors[i]
