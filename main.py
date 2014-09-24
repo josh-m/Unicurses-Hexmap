@@ -76,10 +76,14 @@ def movePlayer(dir, world, window, status, painter):
             showChanges()
                      
 def main():
+    platform = os.name()
+
     #resize terminal (WINDOWS SPECIFIC)
-    os.system("mode con cols="+str(globals.CAM_WIDTH)+" lines="+str(globals.CAM_HEIGHT+15))
-    
-    #need linux terminal resize
+    if platform == "nt":
+        os.system("mode con cols="+str(globals.CAM_WIDTH)+" lines="+str(globals.CAM_HEIGHT+15))
+    elif platform == "posix":
+        #UNIX SPECIFIC
+        sys.stdout.write("\x1b[8;{rows};{cols}t".format(rows=globals.CAM_HEIGHT, cols=globals.CAM_WIDTH))
     
     #init curses
     stdscr = initscr()
@@ -164,13 +168,13 @@ def main():
         #Camera Scrolling Keys
         #TBD: Remaining order checks
         elif ch == KEY_UP:
-            painter.moveCamera(0,-1)
+            painter.moveCamera(0,-1*globals.CAM_SPEED)
         elif ch == KEY_DOWN:
-            painter.moveCamera(0,1)
+            painter.moveCamera(0,globals.CAM_SPEED)
         elif ch == KEY_LEFT:
-            painter.moveCamera(-1,0)
+            painter.moveCamera(-1*globals.CAM_SPEED,0)
         elif ch == KEY_RIGHT:
-            painter.moveCamera(1,0)
+            painter.moveCamera(globals.CAM_SPEED,0)
     
     endwin()
     
