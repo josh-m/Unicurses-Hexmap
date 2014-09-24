@@ -1,8 +1,9 @@
 import __builtin__
 import random
-from enum import Dir, Terrain, Vegetation, Behavior
+from enum import HexDir, Terrain, Vegetation, Behavior
 
 import unicurses
+
 
 class Worker():
     def __init__(self,tile,world):
@@ -28,8 +29,7 @@ class Worker():
                 #idle if no path was found
                 if len(self.path) == 0:
                     self.behavior = Behavior.IDLE
-                
-        
+                       
 class Tile():
     def __init__(self,x,y,terrain=Terrain.WATER,veg=Vegetation.NONE):
         self.pos = (x,y)
@@ -46,7 +46,6 @@ class Tile():
         self.visited = False
         self.depth = -1
  
-
 class Map():
     def __init__(self, rows, cols, debug):
         self.db = debug
@@ -65,7 +64,7 @@ class Map():
             if row % 2 != 0:
                 self.tiles.append(Tile(cols, row))
         
-            
+        #Place player
         #choose a random tile to place player
         #more likely to be towards center
         player_x = int( random.triangular(0,cols))
@@ -88,14 +87,14 @@ class Map():
         worker = Worker(city_tile,self)
         city_tile.has_worker=True
 
-        self.entities = [worker] 
+        self.entities = [worker]
     
     def doTurn(self):
         self.turn += 1
         for entity in self.entities:
             entity.doTurn()
         
-        unicurses.waddstr(self.db, str(entity.my_tile.pos[0]) +',' +str(entity.my_tile.pos[1])+'\n')
+        #unicurses.waddstr(self.db, str(entity.my_tile.pos[0]) +',' +str(entity.my_tile.pos[1])+'\n')
         
     #returns tile at position on hex map
     def tileAt(self, x,y):
@@ -105,7 +104,7 @@ class Map():
     #returns a list of all neighboring tiles
     def neighborsOfPos(self, x,y):
         ls = list()
-        for dir in range(Dir.FIRST, Dir.LAST):
+        for dir in range(HexDir.FIRST, HexDir.LAST):
             pos = self.neighborAt(x,y, dir)
             if pos:
                 ls.append(self.tileAt(pos[0],pos[1]))
@@ -122,7 +121,7 @@ class Map():
         _x = -1
         _y = -1
         
-        if (dir == Dir.UL):
+        if (dir == HexDir.UL):
             if (pos_y != 0):
                 if (pos_x > 0 or (pos_y % 2 == 0)):
                     if pos_y % 2 == 0:
@@ -130,7 +129,7 @@ class Map():
                     else:
                         _x = pos_x-1
                     _y = pos_y-1
-        elif (dir == Dir.UR):
+        elif (dir == HexDir.UR):
             if (pos_y > 0):
                 if(pos_x < self.width):
                     if pos_y % 2 == 0:
@@ -138,11 +137,11 @@ class Map():
                     else:
                         _x = pos_x
                     _y = pos_y-1              
-        elif (dir == Dir.L):
+        elif (dir == HexDir.L):
             if (pos_x > 0):
                 _x = pos_x-1
                 _y = pos_y
-        elif (dir == Dir.R):
+        elif (dir == HexDir.R):
             if (pos_y % 2 == 0):
                 bound = self.width-1
             else:
@@ -150,7 +149,7 @@ class Map():
             if (pos_x < bound):
                 _x = pos_x+1
                 _y = pos_y
-        elif (dir == Dir.DL):
+        elif (dir == HexDir.DL):
             if (pos_y < self.height-1):
                 if(pos_x >0 or pos_y %2 == 0):
                     if pos_y %2 == 0:
@@ -158,7 +157,7 @@ class Map():
                     else:
                         _x = pos_x-1
                     _y = pos_y + 1
-        elif (dir == Dir.DR):
+        elif (dir == HexDir.DR):
             if (pos_y < self.height-1):
                 if (pos_x < self.width):
                     if (pos_y %2 == 0):
@@ -298,8 +297,7 @@ class Map():
         
             ls = _ls
             
-            if len(ls) == 0:
-                unicurses.waddstr(self.db, "HHEEEEEEEEYYYYYYEYEYYY CAN'T FIND")
+            if len(ls) == 0:    
                 return None
     
     

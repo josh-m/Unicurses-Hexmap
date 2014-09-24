@@ -6,8 +6,8 @@ class Terrain():
 class Vegetation():
     NONE = 0
     FOREST = 1
-    
-class Dir:
+      
+class HexDir:
     FIRST = 0
     UL = 0
     UR = 1

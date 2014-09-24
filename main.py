@@ -1,12 +1,15 @@
 from unicurses import *
 import os
+import sys
 import __builtin__
 from collections import deque
+import subprocess
 
 from map import Tile, Map
 from enum import *
 from painter import Painter
 
+import globals
 
 class Key:
     ESC = 27
@@ -23,12 +26,11 @@ class Key:
     F = 102
     G = 103
 
-    
 def showChanges():
     update_panels()
     doupdate()
     
-def incrementTurn(world,status,painter,window):
+def incrementTurn(world,status,painter):
     wmove(status,1,1)
     waddstr(status, "Turn " + str(world.turn))
 
@@ -37,9 +39,11 @@ def incrementTurn(world,status,painter,window):
     world.doTurn()
     
     worker_new = world.entities[0].my_tile
-    painter.drawTileCenter(worker_old, window)
-    painter.drawTileEdges(worker_old, window)
-    painter.drawTileCenter(worker_new, window)
+    painter.updateTileCenter(worker_old)
+    painter.updateTileEdges(worker_old)
+    painter.updateTileCenter(worker_new)
+    
+    painter.drawWindow()
     
     showChanges()
     
@@ -56,23 +60,26 @@ def movePlayer(dir, world, window, status, painter):
     
         if _tile.terrain != Terrain.WATER:
             #increment turn
-            incrementTurn(world,status,painter,window)
+            incrementTurn(world,status,painter)
             
 
             tile = world.tileAt(pos_x, pos_y)
             #update position on tile map
             tile.has_player = False
             _tile.has_player = True
-            #draw to window
-            painter.drawTileCenter(tile, window)
-            painter.drawTileCenter(_tile, window)
+            #update to window
+            painter.updateTileCenter(tile)
+            painter.updateTileCenter(_tile)
+            
+            painter.drawWindow()
             
             showChanges()
-            
-             
+                     
 def main():
     #resize terminal (WINDOWS SPECIFIC)
-    os.system("mode con cols=140 lines=80")
+    os.system("mode con cols="+str(globals.CAM_WIDTH)+" lines="+str(globals.CAM_HEIGHT+15))
+    
+    #need linux terminal resize
     
     #init curses
     stdscr = initscr()
@@ -81,8 +88,8 @@ def main():
     keypad(stdscr, True)
         
     #Get world parameters (currently hardcoded, later user-supplied)
-    N_ROWS = 25
-    N_COLS = 30
+    N_ROWS = 45
+    N_COLS = 55
     
     #Create debugging display
     debug_win = newwin(15,30,0,0)
@@ -92,17 +99,18 @@ def main():
     wmove(debug_win, 2,1)
 
     debug_pnl = new_panel(debug_win)
-    move_panel(debug_pnl, 5+2*(N_ROWS-1) -1, 32)
+    move_panel(debug_pnl, globals.CAM_HEIGHT,32)
 
     #Generate the world
     world_map = Map(N_ROWS,N_COLS,debug_win)
 
     #map_height: 3 + 2*(rows-1) + 2 for border
     #map_width: 5 + 4*cols + 2 for border
-    map_win = newwin(5+2*(N_ROWS-1), 7+4*N_COLS, 0,0)
+    map_win = newwin(globals.CAM_HEIGHT,globals.CAM_WIDTH, 0,0)
     
-    painter = Painter()
-    painter.drawAllTiles(world_map, map_win) 
+       
+    painter = Painter(N_ROWS,N_COLS,map_win)
+    painter.updateAllTiles(world_map) 
     
     #Put world window into a panel
     map_pnl = new_panel(map_win)
@@ -116,7 +124,7 @@ def main():
     waddstr(status_win, "Turn " + str(world_map.turn))
     
     status_pnl = new_panel(status_win)
-    move_panel(status_pnl, 5+2*(N_ROWS-1) -1 , 2)
+    move_panel(status_pnl, globals.CAM_HEIGHT, 2)
     
     info_win = newwin(10,30,0,0)
     box(info_win)
@@ -124,32 +132,45 @@ def main():
     waddstr(info_win, "Tile Info")
     
     info_pnl = new_panel(info_win)
-    move_panel(info_pnl, 5+2*(N_ROWS-1)-1, 62)
-
+    move_panel(info_pnl, globals.CAM_HEIGHT, 62)
     
+    painter.drawWindow()
     showChanges()
-    
+
     
     #input loop
     while True:
+        sys.stdout.flush()
         ch = getch()
+        #Exit Key
         if ch == Key.ESC:
             break
+        #Movement Keys
         elif ch == Key.E:
-            movePlayer(Dir.UL, world_map, map_win, status_win, painter)
+            movePlayer(HexDir.UL, world_map, map_win, status_win, painter)
         elif ch == Key.R:
-            movePlayer(Dir.UR, world_map, map_win, status_win, painter)
+            movePlayer(HexDir.UR, world_map, map_win, status_win, painter)
         elif ch == Key.S:
-            movePlayer(Dir.L, world_map, map_win, status_win, painter)
+            movePlayer(HexDir.L, world_map, map_win, status_win, painter)
         elif ch == Key.G:
-            movePlayer(Dir.R, world_map, map_win, status_win, painter)
+            movePlayer(HexDir.R, world_map, map_win, status_win, painter)
         elif ch == Key.D:
-            movePlayer(Dir.DL, world_map, map_win, status_win, painter)
+            movePlayer(HexDir.DL, world_map, map_win, status_win, painter)
         elif ch == Key.F:
-            movePlayer(Dir.DR, world_map, map_win, status_win, painter)
+            movePlayer(HexDir.DR, world_map, map_win, status_win, painter)
+        #End Turn Key
         elif ch == Key.SPACE:
-            incrementTurn(world_map, status_win, painter, map_win)
-        
+            incrementTurn(world_map, status_win, painter)
+        #Camera Scrolling Keys
+        #TBD: Remaining order checks
+        elif ch == KEY_UP:
+            painter.moveCamera(0,-1)
+        elif ch == KEY_DOWN:
+            painter.moveCamera(0,1)
+        elif ch == KEY_LEFT:
+            painter.moveCamera(-1,0)
+        elif ch == KEY_RIGHT:
+            painter.moveCamera(1,0)
     
     endwin()
     
