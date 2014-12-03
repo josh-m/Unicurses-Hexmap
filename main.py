@@ -4,11 +4,12 @@ import sys
 import __builtin__
 from collections import deque
 import subprocess
+import atexit
 
 from map import Tile, Map
 from enum import Platform, HexDir, Terrain, Key
 from painter import Painter
-
+from title import Title
 import globals as glob
 
 
@@ -62,15 +63,18 @@ def movePlayer(dir, world, window, status, painter):
             showChanges()
 
 def main():
-    platform = determineOS()
-    if platform == Platform.UNDEFINED:
+    determineOS()
+    if glob.platform == Platform.UNDEFINED:
         print "Your operating system is not supported.\n"
         return -1
-
-    resizeTerminal(platform)
+    atexit.register(clean_screen)
+        
+    resizeTerminal()
 
     initCurses()
 
+    Title()
+    
     #Get world parameters (currently hardcoded, later user-supplied)
     N_ROWS = 45
     N_COLS = 55
@@ -126,6 +130,7 @@ def main():
     while True:
         sys.stdout.flush()
         ch = uc.getch()
+        uc.waddstr(debug_win, str(ch))
         #Exit Key
         if ch == Key.ESC:
             break
@@ -161,26 +166,25 @@ def main():
 """
 determineOS()
 Determines the current operating system.
-Returns a OS code, as defined in enum.Platform.
+Sets a global OS code, as defined in enum.Platform.
 """
 def determineOS():
     os_name = os.name
 
     if os_name == "nt":
-        platform = Platform.WINDOWS
+        glob.platform = Platform.WINDOWS
     elif os_name == "posix":
-        platform = Platform.UNIX
+        glob.platform = Platform.UNIX
     else:
-        platform = Platform.UNDEFINED
-
-    return platform
+        glob.platform = Platform.UNDEFINED
 
 """
 resizeTerminal(os_code)
 Resizes the terminal using the appropriate method for the current platform.
 Expects os_code to be valid and supported.
 """
-def resizeTerminal(os_code):
+def resizeTerminal():
+    os_code = glob.platform
     if os_code == Platform.WINDOWS:
         os.system("mode con cols="+str(glob.SCREEN_WIDTH) +
                     " lines="+str(glob.SCREEN_HEIGHT))
@@ -200,6 +204,10 @@ def initCurses():
     uc.noecho()
     uc.curs_set(False)
     uc.keypad(stdscr, True)
+    uc.start_color()
 
+def clean_screen():
+    os.system('clear' if glob.platform == Platform.UNIX else 'cls')
+    
 if __name__ == "__main__":
     main()

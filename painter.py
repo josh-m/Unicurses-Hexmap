@@ -19,7 +19,6 @@ class Colors:
     GRASS_CITY = 7
     
     def __init__(self):
-        start_color()
         init_pair(Colors.DEFAULT, COLOR_WHITE, COLOR_BLACK)
         init_pair(Colors.WATER_BORDER, COLOR_WHITE,COLOR_BLUE)
         init_pair(Colors.WATER_PLAYER, COLOR_RED, COLOR_BLUE)
@@ -55,7 +54,6 @@ class Cell():
 class Painter():
 
     def __init__(self,rows,cols,window):
-        start_color()
         self.colors = Colors()
         self.window = window
         box(self.window)

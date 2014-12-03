@@ -10,6 +10,7 @@ def enum(**enums):
     return type('Enum', (), enums)
 
 Key = enum(
+    ENTER=10, #This value may not work on all platforms.
     ESC=27,
     SPACE=32,
     Q=113,
