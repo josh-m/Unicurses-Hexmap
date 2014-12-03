@@ -76,7 +76,7 @@ def movePlayer(dir, world, window, status, painter):
             showChanges()
                      
 def main():
-    platform = os.name()
+    platform = os.name
 
     #resize terminal (WINDOWS SPECIFIC)
     if platform == "nt":

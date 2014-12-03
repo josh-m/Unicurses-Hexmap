@@ -195,19 +195,41 @@ class Painter():
         return [column, row]
 
     def moveCamera(self,x,y):
-        if x != 0:
-            if (self.cam_pos[0]+x >= 0) and (self.cam_pos[0] + globals.CAM_WIDTH -2 + x <= self.world_size[0]):
+        if x > 0:
+            #can full shift be made?
+            if self.cam_pos[0] + globals.CAM_WIDTH -2 + x <= self.world_size[0]:
                 self.cam_pos[0] += x
                 self.drawWindow()
-        
-        if y != 0:
-            if (self.cam_pos[1] + y >= 0) and (self.cam_pos[1] + globals.CAM_HEIGHT -2 + y <= self.world_size[1]):
+            #is the camera already at the border?
+            elif not self.cam_pos[0] == self.world_size[0] - self.cam_size[0] + 2:
+                self.cam_pos[0] = self.world_size[0] - self.cam_size[0] + 2
+                self.drawWindow()
+        elif x < 0:
+            if self.cam_pos[0]+x >= 0:
+                self.cam_pos[0] += x
+                self.drawWindow()
+            elif not self.cam_pos[0] == 0:
+                self.cam_pos[0] = 0
+                self.drawWindow()
+            
+        if y > 0:
+            if self.cam_pos[1] + globals.CAM_HEIGHT -2 + y <= self.world_size[1]:
                 self.cam_pos[1] += y
+                self.drawWindow()
+            elif not self.cam_pos[1] == self.world_size[1] - self.cam_size[1] + 2:
+                self.cam_pos[1] = self.world_size[1] - self.cam_size[1] + 2
+                self.drawWindow()
+        elif y < 0:
+            if self.cam_pos[1] + y >= 0:
+                self.cam_pos[1] += y
+                self.drawWindow()
+            elif not self.cam_pos[1] == 0:
+                self.cam_pos[1] = 0
                 self.drawWindow()
 
     #redraws all tiles within camera
     def drawWindow(self):
-        for x in range(self.cam_pos[0], self.cam_pos[0]+self.cam_size[0]-2):
+        for x in range(self.cam_pos[0], self.cam_pos[0]+self.cam_size[0] -2):
             for y in range(self.cam_pos[1], self.cam_pos[1] + self.cam_size[1]-2):
                 wmove(self.window,y-self.cam_pos[1]+1, x-self.cam_pos[0]+1)
                 waddstr(self.window, self.cell_matrix[y][x].symbol, self.cell_matrix[y][x].color)
