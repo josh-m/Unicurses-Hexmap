@@ -1,6 +1,6 @@
 from unicurses import *
 from math import floor
-
+from collections import namedtuple
 
 from blockstrings import *
 import globals as glob
@@ -73,10 +73,7 @@ class Title():
                 self.menu_group.shift(ch)
                 showChanges()
         
-class Position:
-    def __init__(self,x,y):
-        self.x = x
-        self.y = y
+Position = namedtuple('Position', 'x y')
 
 """Logical grouping of submenus"""
 class MenuGroup:

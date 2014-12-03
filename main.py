@@ -10,6 +10,7 @@ from map import Tile, Map
 from enum import Platform, HexDir, Terrain, Key
 from painter import Painter
 from title import Title
+import term_size
 import globals as glob
 
 
@@ -67,9 +68,12 @@ def main():
     if glob.platform == Platform.UNDEFINED:
         print "Your operating system is not supported.\n"
         return -1
+        
+    glob.orig_shell_x, glob.orig_shell_y = term_size.getTerminalSize()
+        
     atexit.register(clean_screen)
         
-    resizeTerminal()
+    resizeTerminal(True)
 
     initCurses()
 
@@ -182,18 +186,29 @@ def determineOS():
 resizeTerminal(os_code)
 Resizes the terminal using the appropriate method for the current platform.
 Expects os_code to be valid and supported.
+
+entering is a bool to decided whether to resize to the game's required
+dimensions or to return to the dimensions before the application started
 """
-def resizeTerminal():
+def resizeTerminal(entering):
     os_code = glob.platform
+    
+    if entering:
+        x,y = glob.SCREEN_WIDTH, glob.SCREEN_HEIGHT
+    else:
+        x,y = glob.orig_shell_x, glob.orig_shell_y
+    
+    
     if os_code == Platform.WINDOWS:
-        os.system("mode con cols="+str(glob.SCREEN_WIDTH) +
-                    " lines="+str(glob.SCREEN_HEIGHT))
+        os.system("mode con cols="+str(x) +
+                    " lines="+str(y))
     elif os_code == Platform.UNIX:
-        sys.stdout.write("\x1b[8;{rows};{cols}t".format(rows=glob.SCREEN_HEIGHT,
-                                                        cols=glob.SCREEN_WIDTH))
+        sys.stdout.write("\x1b[8;{rows};{cols}t".format(rows=y,
+                                                        cols=x))
     else:
         print "resizeTerminal: Called with invalid os_code!\n"
 
+        
 
 """
 initCurses():
@@ -207,6 +222,7 @@ def initCurses():
     uc.start_color()
 
 def clean_screen():
+    resizeTerminal(False)
     os.system('clear' if glob.platform == Platform.UNIX else 'cls')
     
 if __name__ == "__main__":
