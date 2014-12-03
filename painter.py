@@ -239,5 +239,3 @@ class Painter():
     def showChanges(self):
         update_panels()
         doupdate()
-        
-        

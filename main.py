@@ -76,20 +76,14 @@ def movePlayer(dir, world, window, status, painter):
             showChanges()
                      
 def main():
-    platform = os.name
-
-    #resize terminal (WINDOWS SPECIFIC)
-    if platform == "nt":
-        os.system("mode con cols="+str(globals.CAM_WIDTH)+" lines="+str(globals.CAM_HEIGHT+15))
-    elif platform == "posix":
-        #UNIX SPECIFIC
-        sys.stdout.write("\x1b[8;{rows};{cols}t".format(rows=globals.CAM_HEIGHT, cols=globals.CAM_WIDTH))
+    platform = determineOS()
+    if (platform == Platform.UNDEFINED):
+        print "Your operating system is not supported.\n"
+        return -1
+        
+    resizeTerminal(platform)
     
-    #init curses
-    stdscr = initscr()
-    noecho()
-    curs_set(False)
-    keypad(stdscr, True)
+    initCurses()
         
     #Get world parameters (currently hardcoded, later user-supplied)
     N_ROWS = 45
@@ -177,6 +171,49 @@ def main():
             painter.moveCamera(globals.CAM_SPEED,0)
     
     endwin()
+    
+"""
+determineOS()
+Determines the current operating system.
+Returns a OS code, as defined in enum.Platform.
+"""
+def determineOS():
+    os_name = os.name
+    
+    if os_name == "nt":
+        platform = Platform.WINDOWS
+    elif os_name == "posix":
+        platform = Platform.UNIX
+    else:
+        platform = Platform.UNDEFINED
+        
+    return platform
+
+"""
+resizeTerminal(os_code)
+Resizes the terminal using the appropriate method for the current platform.
+Expects os_code to be valid and supported. 
+"""
+def resizeTerminal(os_code):
+    if (os_code == Platform.WINDOWS):
+        os.system(  "mode con cols="+str(globals.SCREEN_WIDTH)
+                    +" lines="+str(globals.SCREEN_HEIGHT)       )
+    elif (os_code == Platform.UNIX):
+        sys.stdout.write("\x1b[8;{rows};{cols}t".format(rows=globals.SCREEN_HEIGHT,
+                                                        cols=globals.SCREEN_WIDTH))
+    else:
+        print "resizeTerminal: Called with invalid os_code!\n" 
+
+
+"""
+initCurses():
+Initializes the curses library.
+"""
+def initCurses():
+    stdscr = initscr()
+    noecho()
+    curs_set(False)
+    keypad(stdscr, True)
     
 if __name__ == "__main__":
     main()

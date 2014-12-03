@@ -21,3 +21,8 @@ class Behavior:
     IDLE = 0
     WANDER = 1
     TRAVEL = 2
+    
+class Platform:
+    UNDEFINED = -1
+    UNIX = 0
+    WINDOWS = 1

@@ -323,5 +323,4 @@ class Map():
                 path.pop()
                 self.resetDepth()
                 return path
-        
-        
+
