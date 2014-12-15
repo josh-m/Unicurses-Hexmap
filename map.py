@@ -45,6 +45,13 @@ class Tile():
         #used in various pathfinding/gen algorithms
         self.visited = False
         self.depth = -1
+        
+    #Returns a list of strings that describe the tile
+    def getInfo(self):
+        ret = list()
+        
+        terr_str = Terrain.reverse_mapping[self.terrain]
+        ret.append(terr_str)
  
 class Map():
     def __init__(self, rows, cols, debug):

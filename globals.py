@@ -10,3 +10,5 @@ SCREEN_WIDTH = CAM_WIDTH
 platform = Platform.UNDEFINED
 
 orig_shell_x, orig_shell_y = None, None
+
+N_HEX_ROWS, N_HEX_COLS = 0,0

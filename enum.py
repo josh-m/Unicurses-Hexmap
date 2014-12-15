@@ -5,8 +5,11 @@ Defines various enumerated types used throughout the application.
 100% Pylint compliant. Gee-whiz!
 """
 
-def enum(**enums):
+def enum(*sequential, **named):
     """Usage: Foo = enum(KEY1=VAL1, ...)"""
+    enums = dict(zip(sequential, range(len(sequential))), **named)
+    reverse = dict((value, key) for key, value in enums.iteritems())
+    enums['reverse_mapping'] = reverse
     return type('Enum', (), enums)
 
 Key = enum(

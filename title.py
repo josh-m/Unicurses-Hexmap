@@ -32,15 +32,15 @@ class Title():
         
         
         
-        world_size = Submenu(  "World Size",
+        world_size_menu = Submenu(  "World Size",
                                 ["Small","Average","Large"],
                                 Position(int(glob.SCREEN_WIDTH*.25), 30) )
                                 
-        world_landmass = Submenu(  "World Landmass",
+        world_landmass_menu = Submenu(  "World Landmass",
                                 [   "Pangaea","Continents",
                                     "Islands"   ],
                                 Position( int(glob.SCREEN_WIDTH*.5), 30)  )                   
-        world_oceans = Submenu(  "Oceans Amount",
+        world_oceans_menu = Submenu(  "Oceans Amount",
                                 [   "Waterworld","Wet",
                                     "Half n' Half","Puddles"],
                                 Position( int(glob.SCREEN_WIDTH*.75), 30)  )
@@ -48,12 +48,14 @@ class Title():
         
         
         self.menu_group = MenuGroup()
-        self.menu_group.add(world_size)
-        self.menu_group.add(world_landmass)
-        self.menu_group.add(world_oceans)
+        self.menu_group.add(world_size_menu)
+        self.menu_group.add(world_landmass_menu)
+        self.menu_group.add(world_oceans_menu)
         
         showChanges()
         self.recieveInput()
+        
+        self.world_size = world_size_menu.getSelected().text
         
     def recieveInput(self):
         #input loop
@@ -72,6 +74,9 @@ class Title():
             elif ch == KEY_RIGHT or ch == KEY_LEFT:
                 self.menu_group.shift(ch)
                 showChanges()
+                
+    def getWorldSize(self):
+        return self.world_size
         
 Position = namedtuple('Position', 'x y')
 
@@ -150,10 +155,15 @@ class Submenu:
             
             self.selected_item = self.items[idx-1]
             self.selected_item.setActive(True)
-            
+    
+    #Switches a button state from active to selected.
     def activeToSelected(self):
         self.selected_item.setActive(False)
         self.selected_item.setSelected(True)
+        
+    def getSelected(self):
+        return self.selected_item
+    
         
 class Button:
     def __init__(self, text, width):
@@ -196,6 +206,9 @@ class Button:
             box(self.window, color_pair(101))
         else:
             box(self.window, color_pair(100))
+            
+    def getText(self):
+        return self.text
 
 """returns the length of the longest string in the list"""
 def max_len(strings):
