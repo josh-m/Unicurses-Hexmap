@@ -2,6 +2,7 @@ import unicurses as uc
 import os
 import sys
 import atexit
+import time
 
 import term_size
 
@@ -19,7 +20,7 @@ def main():
 
     glob.orig_shell_x, glob.orig_shell_y = term_size.getTerminalSize()
 
-    #atexit.register(clean_screen)
+    atexit.register(clean_screen)
 
     resizeTerminal(True)
 
@@ -105,6 +106,7 @@ def initCurses():
     uc.start_color()
 
 def clean_screen():
+    #time.sleep(3) #this is here to recieve error messages before closing
     resizeTerminal(False)
     os.system('clear' if glob.platform == Platform.UNIX else 'cls')
 
