@@ -2,7 +2,7 @@ from unicurses import *
 from math import floor
 from collections import namedtuple
 
-from blockstrings import *
+import blockstrings as bs
 import globals as glob
 from enum import Key,Platform
 import sys
@@ -15,7 +15,7 @@ class Title():
         
     
     #Create title display.
-        title_rows = convert("civilization demake")
+        title_rows = bs.convert("piece of shit")
         title_win = newwin( len(title_rows), len(title_rows[0]), 0,0)
         for i in range( len(title_rows)):
             wmove(title_win,i,0)
@@ -79,6 +79,7 @@ class Title():
         return self.world_size
         
 Position = namedtuple('Position', 'x y')
+
 
 """Logical grouping of submenus"""
 class MenuGroup:

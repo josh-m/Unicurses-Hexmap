@@ -20,7 +20,7 @@ def main():
 
     glob.orig_shell_x, glob.orig_shell_y = term_size.getTerminalSize()
 
-    atexit.register(clean_screen)
+    #atexit.register(clean_screen)
 
     resizeTerminal(True)
 
@@ -106,11 +106,18 @@ def initCurses():
     uc.start_color()
 
 def clean_screen():
-    #time.sleep(3) #this is here to recieve error messages before closing
+    if (glob.BAD_EXIT):
+        time.sleep(5)
     resizeTerminal(False)
     os.system('clear' if glob.platform == Platform.UNIX else 'cls')
 
 
 
 if __name__ == "__main__":
+    #try:
     main()
+    """except SystemExit as e:
+        #Normal Exit
+        None
+    except:
+        glob.BAD_EXIT=True"""

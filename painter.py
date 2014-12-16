@@ -49,11 +49,16 @@ class Cell():
     def __init__(self, symbol, color):
         self.symbol = symbol
         self.color = color
-      
+    
+    def set(self, symbol, color):
+        self.symbol = symbol
+        self.color = color
       
 class Painter():
 
     def __init__(self,rows,cols,window):
+        self.draw_borders = False
+    
         self.colors = Colors()
         self.window = window
         box(self.window)
@@ -136,20 +141,8 @@ class Painter():
         self.cell_matrix[pos_y][pos_x-1].color = color
         self.cell_matrix[pos_y][pos_x+1].symbol = char
         self.cell_matrix[pos_y][pos_x+1].color = color
-
-        #draw
-        """
-        wmove(self.window,pos_y-1+1,pos_x+1)
-        waddstr(self.window, char,color)
-        wmove(self.window,pos_y+1+1,pos_x+1)
-        waddstr(self.window, char,color)
-        wmove(self.window,pos_y+1,pos_x-1+1)
-        waddstr(self.window, char,color)
-        wmove(self.window,pos_y+1,pos_x+1+1)
-        waddstr(self.window, char,color)
-        """
         
-    def updateTileBorders(self,tile):
+    def updateTileBorders(self, tile):
         if tile.terrain == Terrain.WATER:
             color = self.colors.WATER_BORDER
         else:
@@ -158,18 +151,21 @@ class Painter():
         pos_x, pos_y = self.findCenterCoords(tile.pos[0], tile.pos[1])
 
         #char cells
-        self.cell_matrix[pos_y-1][pos_x-1].symbol = Symbols.R_BORDER
-        self.cell_matrix[pos_y-1][pos_x-1].color = color
-        self.cell_matrix[pos_y-1][pos_x+1].symbol = Symbols.L_BORDER
-        self.cell_matrix[pos_y-1][pos_x+1].color = color
-        self.cell_matrix[pos_y][pos_x-2].symbol = Symbols.V_BORDER
-        self.cell_matrix[pos_y][pos_x-2].color = color
-        self.cell_matrix[pos_y][pos_x+2].symbol = Symbols.V_BORDER
-        self.cell_matrix[pos_y][pos_x+2].color = color
-        self.cell_matrix[pos_y+1][pos_x-1].symbol = Symbols.L_BORDER
-        self.cell_matrix[pos_y+1][pos_x-1].color = color
-        self.cell_matrix[pos_y+1][pos_x+1].symbol = Symbols.R_BORDER
-        self.cell_matrix[pos_y+1][pos_x+1].color = color
+        if self.draw_borders:           
+            self.cell_matrix[pos_y-1][pos_x-1].set(Symbols.R_BORDER, color)
+            self.cell_matrix[pos_y-1][pos_x+1].set(Symbols.L_BORDER, color)
+            self.cell_matrix[pos_y][pos_x-2].set(Symbols.V_BORDER, color)
+            self.cell_matrix[pos_y][pos_x+2].set(Symbols.V_BORDER, color)
+            self.cell_matrix[pos_y+1][pos_x-1].set(Symbols.L_BORDER, color)
+            self.cell_matrix[pos_y+1][pos_x+1].set(Symbols.R_BORDER, color)
+        else:
+            self.cell_matrix[pos_y-1][pos_x-1].set(Symbols.BLANK, color)
+            self.cell_matrix[pos_y-1][pos_x+1].set(Symbols.BLANK, color)
+            self.cell_matrix[pos_y][pos_x-2].set(Symbols.BLANK, color)
+            self.cell_matrix[pos_y][pos_x+2].set(Symbols.BLANK, color)
+            self.cell_matrix[pos_y+1][pos_x-1].set(Symbols.BLANK, color)
+            self.cell_matrix[pos_y+1][pos_x+1].set(Symbols.BLANK, color)
+            
         
     def updateAllTiles(self, world):      
         water = __builtin__.filter(world.isWater, world.tiles)
@@ -179,7 +175,16 @@ class Painter():
            self.updateTile(tile)
         for tile in water:
             self.updateTile(tile)
+            
+    def updateAllTileBorders(self, world):
+        water = __builtin__.filter(world.isWater, world.tiles)
+        grass = __builtin__.filter(world.isFlat, world.tiles)
 
+        for tile in grass:
+           self.updateTileBorders(tile)
+        for tile in water:
+            self.updateTileBorders(tile)
+            
     #returns char cell coordinate
     def findCenterCoords(self,x,y):
         row = (1 + 2*y)
