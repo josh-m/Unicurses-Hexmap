@@ -15,7 +15,7 @@ class Title():
         
     
     #Create title display.
-        title_rows = bs.convert("piece of shit")
+        title_rows = bs.convert("obsolete strategy game")
         title_win = newwin( len(title_rows), len(title_rows[0]), 0,0)
         for i in range( len(title_rows)):
             wmove(title_win,i,0)
